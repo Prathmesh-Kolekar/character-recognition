@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sensor Data Collection</title>
+</head>
+<body>
+    <h1>Sensor Data Collection</h1>
+
+    <button id="startButton">Start Data Collection</button>
+    <button id="predictButton">Predict Drawing</button>
+    <div class="prediction" id="pred"></div>
+
+    <script>
+        let sensorData = []; // Array to store collected sensor data
+        let collectingData = false; // Flag to track data collection
+
+        // JavaScript code to collect sensor data
+
+        window.addEventListener("devicemotion", event => {
+            if (collectingData) {
+                const acceleration = event.accelerationIncludingGravity;
+                const x = acceleration.x;
+                const y = acceleration.y;
+                const z = acceleration.z;
+
+                const timestamp = new Date().getTime(); // Timestamp in milliseconds
+
+                sensorData.push({
+                    timestamp: timestamp,
+                    x: x,
+                    y: y,
+                    z: z
+                });
+            }
+        });
+
+        document.getElementById("startButton").addEventListener("click", () => {
+            collectingData = true;
+            setTimeout(() => {
+                collectingData = false;
+                sendSensorDataToServer(sensorData);
+            }, 5000); // Collect data for 5 seconds
+
+            // Reset sensorData array
+            sensorData = [];
+        });
+
+        document.getElementById("predictButton").addEventListener("click", () => {
+            collectingData = true;
+            setTimeout(() => {
+                collectingData = false;
+                sendSensorDataForPrediction(sensorData);
+            }, 5000); // Collect data for 5 seconds
+
+            // Reset sensorData array
+            sensorData = [];
+            
+            
+        });
+
+         // Call after a 2000ms (2 seconds) delay
+
+        setInterval(get_latest_prediction, 2000);
+
+        function sendSensorDataToServer(data) {
+            fetch("/receive_sensor_data", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log("Sensor data sent and saved successfully!");
+                } else {
+                    console.error("Failed to send sensor data.");
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        }
+
+        function sendSensorDataForPrediction(data) {
+            fetch("/predict_drawing", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(prediction => {
+                console.log("Prediction:", prediction);
+                // You can display the prediction on the frontend or perform any other action
+                get_latest_prediction()
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        }
+
+        function get_latest_prediction(){
+            fetch("get_pred")
+            .then(response => response.json())
+            .then(data => {
+                const variableValue = data.variable;
+                document.getElementById('pred').innerText=variableValue;
+        })
+        }
+    </script>
+</body>
+</html>
